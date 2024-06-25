@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Controls from './components/Controls';
 import CoordinatesDisplay from './components/CoordinatesDisplay';
 import { Position } from './types';
-import * as THREE from 'three';
+import Animation3 from './components/Animation3';
 
 const calculatePosition = (initialLatitude: number, initialLongitude: number, direction: number, time: number): Position => {
   const theta = time;
@@ -25,21 +25,6 @@ const App: React.FC = () => {
   const [globalTime, setGlobalTime] = useState(0);
   const [position, setPosition] = useState<Position>({ x: 0, y: 0, z: 0 });
   const [earthRotation, setEarthRotation] = useState(0);
-  const [earthTexture, setEarthTexture] = useState<THREE.Texture | null>(null);
-
-  useEffect(() => {
-    const textureLoader = new THREE.TextureLoader();
-    textureLoader.load(
-      'https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg',
-      (texture) => {
-        setEarthTexture(texture);
-      },
-      undefined,
-      (err) => {
-        console.error('Texture loading error:', err);
-      }
-    );
-  }, []);
 
   const handleStartSimulation = (longitude: number, latitude: number, speed: number, direction: number, animationSpeed: number) => {
     setInitialLongitude(longitude);
@@ -80,10 +65,6 @@ const App: React.FC = () => {
     };
   }, [isRunning, initialLongitude, initialLatitude, direction, animationSpeed]);
 
-  if (!earthTexture) {
-    return <div>Loading...</div>;
-  }
-
   return (
     <div>
       <Controls
@@ -95,6 +76,13 @@ const App: React.FC = () => {
         earthRotation={earthRotation}
         globalTime={globalTime}
       />
+
+      <Animation3
+        initialLongitude={initialLongitude}
+        initialLatitude={initialLatitude}
+        position={position}
+        earthRotation={earthRotation}
+        isRunning={isRunning}></Animation3>
     </div>
   );
 };
