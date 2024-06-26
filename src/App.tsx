@@ -3,6 +3,7 @@ import Controls from './components/Controls';
 import CoordinatesDisplay from './components/CoordinatesDisplay';
 import { Position } from './types';
 import Animation3 from './components/Animation3';
+import Animation1 from './components/Animation1';
 
 const calculatePosition = (initialLatitude: number, initialLongitude: number, direction: number, time: number): Position => {
   const theta = time;
@@ -79,12 +80,20 @@ const App: React.FC = () => {
         earthRotation={earthRotation}
         globalTime={globalTime}
       />
+      <Animation1
+        initialLongitude={initialLongitude}
+        initialLatitude={initialLatitude}
+        position={position}
+        earthRotation={earthRotation}
+        isRunning={isRunning}>
+      </Animation1>
       <Animation3
         initialLongitude={initialLongitude}
         initialLatitude={initialLatitude}
         position={position}
         earthRotation={earthRotation}
-        isRunning={isRunning}></Animation3>
+        isRunning={isRunning}>
+      </Animation3>
     </div>
   );
 };
