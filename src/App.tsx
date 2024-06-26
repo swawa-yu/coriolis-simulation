@@ -26,7 +26,7 @@ const App: React.FC = () => {
   const [position, setPosition] = useState<Position>({ x: 0, y: 0, z: 0 });
   const [earthRotation, setEarthRotation] = useState(0);
 
-  const handleStartSimulation = (longitude: number, latitude: number, speed: number, direction: number, animationSpeed: number) => {
+  const handleStartSimulation = (longitude: number, latitude: number, direction: number, animationSpeed: number) => {
     setInitialLongitude(longitude);
     setInitialLatitude(latitude);
     setDirection(direction);
