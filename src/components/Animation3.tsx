@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Position } from '../types';
 import { absoluteToEarth, xyzToGeo } from '../utils';
+import mapImageSrc from '../assets/world_map_with_grid.jpg';
 
 interface Animation3Props {
     initialLongitude: number;
@@ -18,11 +19,17 @@ const Animation3: React.FC<Animation3Props> = ({ initialLongitude, initialLatitu
 
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
-        if (!ctx) return;
+        if (!ctx) {
+            console.log("Failed to get canvas context");
+            return;
+        }
 
+        console.log("Loading image");
         const mapImage = new Image();
-        mapImage.src = 'https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg';
+        mapImage.src = mapImageSrc;  // インポートした画像を使用
         mapImage.onload = () => {
+            console.log("Image loaded successfully");
+
             const aspectRatio = mapImage.width / mapImage.height;
 
             const resizeCanvas = () => {
@@ -41,58 +48,26 @@ const Animation3: React.FC<Animation3Props> = ({ initialLongitude, initialLatitu
                 canvas.height = height;
 
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-                drawMap(ctx, mapImage, width, height, initialLongitude);
-                drawGrid(ctx, width, height);
-
-                // 初期位置を描画
-                const initialPos = mercatorProjection(initialLatitude, initialLongitude, width, height);
-                drawInitialPoint(ctx, initialPos.x, initialPos.y);
+                drawMap(ctx, mapImage, width, height);
+                drawInitialPoint(ctx, initialLatitude, initialLongitude, width, height);
             };
 
-            const drawMap = (ctx: CanvasRenderingContext2D, image: HTMLImageElement, width: number, height: number, initialLongitude: number) => {
-                const drawWidth = height * aspectRatio;
-                const offsetX = (initialLongitude + 180) / 360 * drawWidth;
-
-                ctx.drawImage(image, -offsetX, 0, drawWidth, height);
-                ctx.drawImage(image, -offsetX + drawWidth, 0, drawWidth, height);
+            const drawMap = (ctx: CanvasRenderingContext2D, image: HTMLImageElement, width: number, height: number) => {
+                ctx.drawImage(image, 0, 0, width, height);
             };
 
-            const drawGrid = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-                ctx.lineWidth = 1;
-
-                // 緯度線
-                for (let lat = -90; lat <= 90; lat += 15) {
-                    const y = mercatorProjection(lat, 0, width, height).y;
-                    ctx.beginPath();
-                    ctx.moveTo(0, y);
-                    ctx.lineTo(width, y);
-                    ctx.stroke();
-                }
-
-                // 経度線
-                for (let lon = -180; lon <= 180; lon += 15) {
-                    const x = mercatorProjection(0, lon, width, height).x;
-                    ctx.beginPath();
-                    ctx.moveTo(x, 0);
-                    ctx.lineTo(x, height);
-                    ctx.stroke();
-                }
-            };
-
-            const mercatorProjection = (lat: number, lon: number, width: number, height: number) => {
-                const x = (lon + 180) * (width / 360);
-                const latRad = lat * (Math.PI / 180);
-                const mercN = Math.log(Math.tan((Math.PI / 4) + (latRad / 2)));
-                const y = (height / 2) - (width * mercN / (2 * Math.PI));
-                return { x, y };
-            };
-
-            const drawInitialPoint = (ctx: CanvasRenderingContext2D, x: number, y: number) => {
+            const drawInitialPoint = (ctx: CanvasRenderingContext2D, lat: number, lon: number, width: number, height: number) => {
+                const pos = cylindricalProjection(lat, lon, width, height);
                 ctx.beginPath();
-                ctx.arc(x, y, 5, 0, 2 * Math.PI);
+                ctx.arc(pos.x, pos.y, 5, 0, 2 * Math.PI);
                 ctx.fillStyle = 'blue';
                 ctx.fill();
+            };
+
+            const cylindricalProjection = (lat: number, lon: number, width: number, height: number) => {
+                const x = (lon + 180) * (width / 360);
+                const y = (90 - lat) * (height / 180);
+                return { x, y };
             };
 
             const drawTrajectory = (ctx: CanvasRenderingContext2D, x: number, y: number) => {
@@ -121,11 +96,10 @@ const Animation3: React.FC<Animation3Props> = ({ initialLongitude, initialLatitu
                 requestAnimationFrame(animate);
 
                 const { lat, lon } = absoluteToEarth(xyzToGeo(position), earthRotation);
-                const pos = mercatorProjection(lat, lon, canvas.width, canvas.height);
+                const pos = cylindricalProjection(lat, lon, canvas.width, canvas.height);
 
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-                drawMap(ctx, mapImage, canvas.width, canvas.height, initialLongitude);
-                drawGrid(ctx, canvas.width, canvas.height);
+                drawMap(ctx, mapImage, canvas.width, canvas.height);
                 drawTrajectory(ctx, pos.x, pos.y);
                 drawObject(ctx, pos.x, pos.y);
             };
@@ -137,6 +111,10 @@ const Animation3: React.FC<Animation3Props> = ({ initialLongitude, initialLatitu
             return () => {
                 window.removeEventListener('resize', resizeCanvas);
             };
+        };
+
+        mapImage.onerror = () => {
+            console.error("Failed to load the image");
         };
     }, [initialLongitude, initialLatitude, isRunning, position]);
 
