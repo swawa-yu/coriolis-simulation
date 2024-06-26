@@ -13,7 +13,6 @@ interface Animation1Props {
     isAbsolute: boolean;
 }
 
-
 const Animation1: React.FC<Animation1Props> = ({ initialPosition, initialPositionGeo, isRunning, position, earthRotation, isAbsolute }) => {
     const mountRef = useRef<HTMLDivElement>(null);
     const earthRef = useRef<THREE.Mesh>();
@@ -75,43 +74,53 @@ const Animation1: React.FC<Animation1Props> = ({ initialPosition, initialPositio
         };
         window.addEventListener('resize', handleResize);
 
+        const animate = () => {
+            if (earthRef.current) {
+                earthRef.current.rotation.y += 0.01;
+            }
+
+            if (rendererRef.current && cameraRef.current && sceneRef.current) {
+                rendererRef.current.render(sceneRef.current, cameraRef.current);
+            }
+
+            requestAnimationFrame(animate);
+        };
+
+        requestAnimationFrame(animate);
+
         return () => {
             window.removeEventListener('resize', handleResize);
             if (renderer && mountRef.current) {
                 mountRef.current.removeChild(renderer.domElement);
             }
         };
-    }, [initialPosition]);
+    }, []);
 
     useEffect(() => {
-        if (!isRunning) return;
-
         let animationFrameId: number;
 
         const animate = () => {
             if (earthRef.current) {
-                if (isAbsolute) {
-                    earthRef.current.rotation.y = earthRotation * Math.PI / 180;
+                earthRef.current.rotation.y = (initialPositionGeo.lon + (isAbsolute ? earthRotation : 0)) * Math.PI / 180;
+            }
+
+            if (isRunning) {
+                if (objectRef.current) {
+                    const pos = !isAbsolute ?
+                        rotateAroundPolarAxis(position, -earthRotation + initialPositionGeo.lon) :
+                        rotateAroundPolarAxis(position, initialPositionGeo.lon);
+                    const { x, y, z } = normalToThree(pos);
+                    objectRef.current.position.set(x, y, z);
                 }
-                earthRef.current.rotation.y += initialPositionGeo.lon * Math.PI / 180;
-            }
 
-            if (objectRef.current) {
-                const pos = !isAbsolute ?
-                    rotateAroundPolarAxis(position, earthRotation + initialPositionGeo.lon) :
-                    rotateAroundPolarAxis(position, initialPositionGeo.lon);
-                const { x, y, z } = normalToThree(pos);
-                objectRef.current.position.set(x, y, z);
+                if (initialPositionRef.current) {
+                    const pos = isAbsolute ?
+                        rotateAroundPolarAxis(initialPosition, earthRotation + initialPositionGeo.lon) :
+                        rotateAroundPolarAxis(initialPosition, initialPositionGeo.lon);
+                    const { x, y, z } = normalToThree(pos);
+                    initialPositionRef.current.position.set(x, y, z);
+                }
             }
-
-            if (initialPositionRef.current) {
-                const pos = isAbsolute ?
-                    rotateAroundPolarAxis(initialPosition, earthRotation + initialPositionGeo.lon) :
-                    rotateAroundPolarAxis(initialPosition, +initialPositionGeo.lon);
-                const { x, y, z } = normalToThree(pos);
-                initialPositionRef.current.position.set(x, y, z);
-            }
-
 
             if (rendererRef.current && cameraRef.current && sceneRef.current) {
                 rendererRef.current.render(sceneRef.current, cameraRef.current);
@@ -125,7 +134,7 @@ const Animation1: React.FC<Animation1Props> = ({ initialPosition, initialPositio
         return () => {
             cancelAnimationFrame(animationFrameId);
         };
-    }, [isRunning, initialPosition, earthRotation, position]);
+    }, [isRunning, initialPosition, earthRotation, position, initialPositionGeo.lon]);
 
     return <div ref={mountRef} style={{ width: '100%', height: '100%' }} />;
 };
