@@ -1,20 +1,24 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { Position } from '../types';
-import mapImageSrc from '../assets/world_map_with_grid.jpg'; // ローカルのテクスチャをインポート
+import { Position, PositionGeo } from '../types';
+import { normalToThree, rotateAroundPolarAxis } from '../utils';
+import mapImageSrc from '../assets/world_map_with_grid.jpg';
 
 interface Animation1Props {
-    initialLongitude: number;
-    initialLatitude: number;
+    initialPosition: Position;
+    initialPositionGeo: PositionGeo;
     earthRotation: number;
     position: Position;
     isRunning: boolean;
+    isAbsolute: boolean;
 }
 
-const Animation1: React.FC<Animation1Props> = ({ initialLongitude, initialLatitude, isRunning, position, earthRotation }) => {
+
+const Animation1: React.FC<Animation1Props> = ({ initialPosition, initialPositionGeo, isRunning, position, earthRotation, isAbsolute }) => {
     const mountRef = useRef<HTMLDivElement>(null);
     const earthRef = useRef<THREE.Mesh>();
     const objectRef = useRef<THREE.Mesh>();
+    const initialPositionRef = useRef<THREE.Mesh>(); // 初期位置のマーカー参照を追加
     const rendererRef = useRef<THREE.WebGLRenderer>();
     const cameraRef = useRef<THREE.PerspectiveCamera>();
     const sceneRef = useRef<THREE.Scene>();
@@ -54,10 +58,12 @@ const Animation1: React.FC<Animation1Props> = ({ initialLongitude, initialLatitu
         scene.add(object);
         objectRef.current = object;
 
-        // 初期の位置を設定
-        const initialPosition = new THREE.Vector3();
-        initialPosition.setFromSphericalCoords(1, (90 - initialLatitude) * (Math.PI / 180), initialLongitude * (Math.PI / 180));
-        object.position.copy(initialPosition);
+        // 初期位置マーカーを作成
+        const initialPositionMarkerGeometry = new THREE.SphereGeometry(0.05, 32, 32);
+        const initialPositionMarkerMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+        const initialPositoinMarker = new THREE.Mesh(initialPositionMarkerGeometry, initialPositionMarkerMaterial);
+        scene.add(initialPositoinMarker);
+        initialPositionRef.current = initialPositoinMarker;
 
         // リサイズイベントに対応
         const handleResize = () => {
@@ -75,7 +81,7 @@ const Animation1: React.FC<Animation1Props> = ({ initialLongitude, initialLatitu
                 mountRef.current.removeChild(renderer.domElement);
             }
         };
-    }, [initialLongitude, initialLatitude]);
+    }, [initialPosition]);
 
     useEffect(() => {
         if (!isRunning) return;
@@ -84,13 +90,28 @@ const Animation1: React.FC<Animation1Props> = ({ initialLongitude, initialLatitu
 
         const animate = () => {
             if (earthRef.current) {
-                earthRef.current.rotation.y = earthRotation * Math.PI / 180;
+                if (isAbsolute) {
+                    earthRef.current.rotation.y = earthRotation * Math.PI / 180;
+                }
+                earthRef.current.rotation.y += initialPositionGeo.lon * Math.PI / 180;
             }
 
             if (objectRef.current) {
-                const { x, y, z } = position;
+                const pos = !isAbsolute ?
+                    rotateAroundPolarAxis(position, earthRotation + initialPositionGeo.lon) :
+                    rotateAroundPolarAxis(position, initialPositionGeo.lon);
+                const { x, y, z } = normalToThree(pos);
                 objectRef.current.position.set(x, y, z);
             }
+
+            if (initialPositionRef.current) {
+                const pos = isAbsolute ?
+                    rotateAroundPolarAxis(initialPosition, earthRotation + initialPositionGeo.lon) :
+                    rotateAroundPolarAxis(initialPosition, +initialPositionGeo.lon);
+                const { x, y, z } = normalToThree(pos);
+                initialPositionRef.current.position.set(x, y, z);
+            }
+
 
             if (rendererRef.current && cameraRef.current && sceneRef.current) {
                 rendererRef.current.render(sceneRef.current, cameraRef.current);
@@ -104,9 +125,9 @@ const Animation1: React.FC<Animation1Props> = ({ initialLongitude, initialLatitu
         return () => {
             cancelAnimationFrame(animationFrameId);
         };
-    }, [isRunning, earthRotation, position]);
+    }, [isRunning, initialPosition, earthRotation, position]);
 
-    return <div ref={mountRef} />;
+    return <div ref={mountRef} style={{ width: '100%', height: '100%' }} />;
 };
 
 export default Animation1;

@@ -4,8 +4,9 @@ import CoordinatesDisplay from './components/CoordinatesDisplay';
 import { Position } from './types';
 import Animation3 from './components/Animation3';
 import Animation1 from './components/Animation1';
+import { geoToXyz } from './utils';
 
-const calculatePosition = (initialLatitude: number, initialLongitude: number, direction: number, time: number): Position => {
+export const calculatePosition = (initialLatitude: number, initialLongitude: number, direction: number, time: number): Position => {
   const theta = time;
   const latRad = initialLatitude * Math.PI / 180;
   const lonRad = initialLongitude * Math.PI / 180;
@@ -81,11 +82,21 @@ const App: React.FC = () => {
         globalTime={globalTime}
       />
       <Animation1
-        initialLongitude={initialLongitude}
-        initialLatitude={initialLatitude}
+        initialPosition={geoToXyz({ lat: initialLatitude, lon: initialLongitude })}
+        initialPositionGeo={{ lat: initialLatitude, lon: initialLongitude }}
         position={position}
         earthRotation={earthRotation}
-        isRunning={isRunning}>
+        isRunning={isRunning}
+        isAbsolute={true}>
+      </Animation1>
+      <Animation1
+        initialPosition={geoToXyz({ lat: initialLatitude, lon: initialLongitude })}
+        initialPositionGeo={{ lat: initialLatitude, lon: initialLongitude }}
+        position={position}
+        earthRotation={earthRotation}
+        isRunning={isRunning}
+        isAbsolute={false}
+      >
       </Animation1>
       <Animation3
         initialLongitude={initialLongitude}

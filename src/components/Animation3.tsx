@@ -102,6 +102,7 @@ const Animation3: React.FC<Animation3Props> = ({ initialLongitude, initialLatitu
                 drawMap(ctx, mapImage, canvas.width, canvas.height);
                 drawTrajectory(ctx, pos.x, pos.y);
                 drawObject(ctx, pos.x, pos.y);
+                drawInitialPoint(ctx, initialLatitude, initialLongitude, canvas.width, canvas.height);
             };
 
             animate();
