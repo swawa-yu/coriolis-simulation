@@ -26,16 +26,12 @@ const App: React.FC = () => {
   const [position, setPosition] = useState<Position>({ x: 0, y: 0, z: 0 });
   const [earthRotation, setEarthRotation] = useState(0);
 
-  const handleStartSimulation = (longitude: number, latitude: number, direction: number, animationSpeed: number) => {
-    setInitialLongitude(longitude);
-    setInitialLatitude(latitude);
-    setDirection(direction);
-    setAnimationSpeed(animationSpeed);
+  const handleStartSimulation = () => {
     setIsRunning(true);
   };
 
-  const handleAnimationSpeedChange = (animationSpeed: number) => {
-    setAnimationSpeed(animationSpeed);
+  const handleAnimationSpeedChange = (newSpeed: number) => {
+    setAnimationSpeed(newSpeed);
   };
 
   useEffect(() => {
@@ -68,15 +64,21 @@ const App: React.FC = () => {
   return (
     <div>
       <Controls
-        onStartSimulation={handleStartSimulation}
+        initialLongitude={initialLongitude}
+        initialLatitude={initialLatitude}
+        direction={direction}
+        animationSpeed={animationSpeed}
+        onLongitudeChange={setInitialLongitude}
+        onLatitudeChange={setInitialLatitude}
+        onDirectionChange={setDirection}
         onAnimationSpeedChange={handleAnimationSpeedChange}
+        onStartSimulation={handleStartSimulation}
       />
       <CoordinatesDisplay
         position={position}
         earthRotation={earthRotation}
         globalTime={globalTime}
       />
-
       <Animation3
         initialLongitude={initialLongitude}
         initialLatitude={initialLatitude}
