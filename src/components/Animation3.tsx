@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Position } from '../types';
-import { absoluteToEarth, geoToXyz, xyzToGeo } from '../utils';
+import { absoluteToEarth, xyzToGeo } from '../utils';
 
 interface Animation3Props {
     initialLongitude: number;
